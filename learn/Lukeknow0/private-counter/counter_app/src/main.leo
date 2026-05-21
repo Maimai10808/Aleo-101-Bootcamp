@@ -1,19 +1,34 @@
-// The 'counter_app' program.
-program counter_app.aleo {
-    // This is the constructor for the program.
-    // The constructor allows you to manage program upgrades.
-    // It is called when the program is deployed or upgraded.
-    // It is currently configured to **prevent** upgrades.
-    // Other configurations include:
-    //  - @admin(address="aleo1...")
-    //  - @checksum(mapping="credits.aleo/fixme", key="0field")
-    //  - @custom
-    // For more information, please refer to the documentation: `https://docs.leo-lang.org/guides/upgradability`
+// The `counter_v2.aleo` program.
+program counter_v2.aleo {
     @noupgrade
     constructor() {}
 
-    fn main(public a: u32, b: u32) -> u32 {
-        let c: u32 = a + b;
-        return c;
+    record Counter {
+        owner: address,
+        count: u32,
+    }
+
+    // Create a new counter with initial value 0
+    fn mint(owner: address) -> Counter {
+        return Counter {
+            owner: owner,
+            count: 0u32,
+        };
+    }
+
+    // Increment the counter by 1
+    fn increment(counter: Counter) -> Counter {
+        assert_eq(counter.owner, self.caller);
+        let new_count: u32 = counter.count + 1u32;
+        return Counter {
+            owner: self.caller,
+            count: new_count,
+        };
+    }
+
+    // Get the current count
+    fn get_count(counter: Counter) -> u32 {
+        assert_eq(counter.owner, self.caller);
+        return counter.count;
     }
 }

@@ -2,158 +2,167 @@
 
 将你的 Aleo 应用部署到测试网并完成一次链上交互，提交相关代码，测试网合约地址和链上交互截图。
 
-## 部署准备
+---
 
-### 1. 环境要求
+## 部署信息
 
-- Leo 编译器 v4.0.2+（已安装）
-- Aleo 测试网钱包（已创建）
-- 测试网代币（通过 Faucet 获取）
-
-### 2. 获取测试币
-
-访问 [Aleo Faucet](https://faucet.aleo.org/)：
-1. 连接 Shield Wallet
-2. 选择 Testnet 网络
-3. 领取测试代币
-
-### 3. 编译程序
-
-```bash
-cd learn/Lukeknow0/private-counter/counter_app
-leo build
-```
-
-编译成功后会生成：
-- `build/counter_app.avm` - Aleo 虚拟机字节码
-- `build/program.json` - 程序元数据
-
-## 部署到测试网
-
-### 1. 部署命令
-
-```bash
-leo deploy --network testnet
-```
-
-### 2. 部署参数
-
-- **程序名称**：counter_app.aleo
+### 合约地址
+- **程序名称**：counter_v2.aleo
 - **网络**：Aleo Testnet
-- **Gas 费用**：约 0.5-1 Aleo credits
+- **部署者地址**：aleo15xrzy5rp2rz8xadnv8htm267k7tt3q3gmkh7nqqfva5kt02v6yyqpdnu8e
 
-### 3. 部署结果
+### 部署交易
+- **部署交易 ID**：`at1wp7s9nkpgjpxenm6ufx8h8yd6f4lfwp9uex6j0h477ja8n99kczqc6lkl3`
+- **Fee ID**：`au1yjudw0e2yv6nsxgu673jdq8l63sek8kpvu79zydnt6gqs47jzuyqh4q76q`
+- **Fee 交易 ID**：`at129yu4r37a67qr0uamr54tfdfs6sc3yzhanth7l0vjdzpvft59cps9wkzj2`
+- **部署费用**：4.561 credits
+- **部署时间**：2026-05-21
+- **状态**：✅ Transaction accepted and confirmed
 
-**合约地址**：`counter_app.aleo`（待实际部署后填写）
+### 区块浏览器
+- **部署交易**：https://testnet.explorer.provable.com/transaction/at1wp7s9nkpgjpxenm6ufx8h8yd6f4lfwp9uex6j0h477ja8n99kczqc6lkl3
 
-**交易哈希**：（待实际部署后填写）
-
-**区块高度**：（待实际部署后填写）
+---
 
 ## 链上交互
 
-### 1. 创建计数器
+### 交易 1：调用 mint 函数创建计数器
 
-```bash
-leo execute counter_app.aleo mint --network testnet
+- **交易 ID**：`at1a7l5hkgwl03ecm7dtj2mrcnnhv7ys90fcddq6pvmf88l6p2rxcrqr450da`
+- **Fee ID**：`au162lp8lkhyfqnxm07ygt289yc3z39jgx0aq66949jxlv7k79ua5pqpypdwk`
+- **Fee 交易 ID**：`at1wrdrtlcas4rtsgy2chj7zc8vx8mfju8rh6ann9udrr67h4skgqxszdeee7`
+- **执行费用**：0.001454 credits
+- **执行时间**：2026-05-21
+- **状态**：✅ Execution confirmed
+
+**输出结果**：
 ```
-
-**交易哈希**：（待实际执行后填写）
-
-### 2. 增加计数
-
-```bash
-leo execute counter_app.aleo increment --network testnet
+Counter {
+    owner: aleo15xrzy5rp2rz8xadnv8htm267k7tt3q3gmkh7nqqfva5kt02v6yyqpdnu8e.private,
+    count: 0u32.private,
+    _nonce: 5917162202531231934717023552963376063125046338432672204288999068889910927585group.public,
+    _version: 1u8.public
+}
 ```
-
-**交易哈希**：（待实际执行后填写）
-
-### 3. 查看数值
-
-```bash
-leo execute counter_app.aleo get_value --network testnet
-```
-
-## 链上验证
-
-### 区块浏览器查看
-
-访问 [Aleo Explorer](https://testnet.explorer.provable.com/)：
-1. 搜索合约地址或交易哈希
-2. 查看程序代码和交易记录
-3. 验证隐私保护特性
-
-### 验证要点
-
-- ✅ 程序已成功部署到测试网
-- ✅ 交易记录可在区块浏览器查看
-- ✅ 隐私保护正常工作（record 加密存储）
-- ✅ 所有权验证机制有效
-
-## 实际部署截图
-
-### 部署成功
-![部署成功截图](screenshot_deploy.png)
-
-### 交易记录
-![交易记录截图](screenshot_transaction.png)
 
 ### 区块浏览器
-![区块浏览器截图](screenshot_explorer.png)
+- **执行交易**：https://testnet.explorer.provable.com/transaction/at1a7l5hkgwl03ecm7dtj2mrcnnhv7ys90fcddq6pvmf88l6p2rxcrqr450da
+
+---
+
+## 程序功能
+
+| 函数 | 功能 | 输入 | 输出 |
+|------|------|------|------|
+| `mint` | 创建新计数器 | owner: address | Counter record (count=0) |
+| `increment` | 增加计数 | counter: Counter | Counter record (count+1) |
+| `get_count` | 获取当前值 | counter: Counter | u32 |
+
+## Leo 源代码
+
+```leo
+program counter_v2.aleo {
+    @noupgrade
+    constructor() {}
+
+    record Counter {
+        owner: address,
+        count: u32,
+    }
+
+    fn mint(owner: address) -> Counter {
+        return Counter {
+            owner: owner,
+            count: 0u32,
+        };
+    }
+
+    fn increment(counter: Counter) -> Counter {
+        assert_eq(counter.owner, self.caller);
+        let new_count: u32 = counter.count + 1u32;
+        return Counter {
+            owner: self.caller,
+            count: new_count,
+        };
+    }
+
+    fn get_count(counter: Counter) -> u32 {
+        assert_eq(counter.owner, self.caller);
+        return counter.count;
+    }
+}
+```
+
+---
+
+## 部署过程截图
+
+### 部署成功
+```
+📡 Broadcasting deployment for counter_v2.aleo...
+💰Your current public balance is 18.088046 credits.
+
+✉️ Broadcasted transaction with:
+  - transaction ID: 'at1wp7s9nkpgjpxenm6ufx8h8yd6f4lfwp9uex6j0h477ja8n99kczqc6lkl3'
+
+🔄 Searching up to 12 blocks to confirm transaction...
+Explored 3 blocks.
+Transaction accepted.
+✅ Deployment confirmed!
+```
+
+### 执行成功
+```
+⚙️ Executing counter_v2.aleo/mint...
+
+📊 Execution Cost Summary for counter_v2.aleo
+💰 Cost Breakdown (credits)
+  Transaction Storage:  0.001454
+  Total Fee:            0.001454
+
+➡️  Output
+ • {
+  owner: aleo15xrzy5rp2rz8xadnv8htm267k7tt3q3gmkh7nqqfva5kt02v6yyqpdnu8e.private,
+  count: 0u32.private
+}
+
+📡 Broadcasting execution for counter_v2.aleo...
+💰Your current public balance is 13.527046 credits.
+
+🔄 Searching up to 12 blocks to confirm transaction...
+Explored 3 blocks.
+Transaction accepted.
+✅ Execution confirmed!
+```
+
+---
 
 ## 代码文件
 
 完整代码已提交至：`learn/Lukeknow0/private-counter/`
 
-- `counter_app/main.leo` - Leo 智能合约源码
-- `counter_app/build/` - 编译产物
+- `counter_app/src/main.leo` - Leo 智能合约源码
+- `counter_app/build/main.aleo` - 编译产物
+- `counter_app/build/abi.json` - 程序 ABI
+- `counter_app/program.json` - 程序配置
 - `index.html` - 前端界面
 - `README.md` - 项目说明文档
 
-## 部署脚本
+---
 
-```bash
-#!/bin/bash
-# deploy.sh - Aleo 部署脚本
+## 验证链接
 
-echo "🚀 开始部署 Aleo 私密计数器..."
+1. **查看部署交易**：
+   https://testnet.explorer.provable.com/transaction/at1wp7s9nkpgjpxenm6ufx8h8yd6f4lfwp9uex6j0h477ja8n99kczqc6lkl3
 
-# 1. 编译程序
-echo "📦 编译程序..."
-leo build
+2. **查看执行交易**：
+   https://testnet.explorer.provable.com/transaction/at1a7l5hkgwl03ecm7dtj2mrcnnhv7ys90fcddq6pvmf88l6p2rxcrqr450da
 
-# 2. 部署到测试网
-echo "🌐 部署到测试网..."
-leo deploy --network testnet
-
-# 3. 创建计数器
-echo "🔧 创建计数器..."
-leo execute counter_app.aleo mint --network testnet
-
-# 4. 测试增加计数
-echo "➕ 测试增加计数..."
-leo execute counter_app.aleo increment --network testnet
-
-echo "✅ 部署完成！"
-```
-
-## 注意事项
-
-1. **Gas 费用**：部署和交易需要消耗 Aleo credits，确保钱包有足够余额
-2. **网络延迟**：测试网可能较慢，交易确认需要一定时间
-3. **隐私保护**：所有操作在链下执行，链上仅存储零知识证明
-4. **状态同步**：record 状态变更需要通过交易确认后才能在链上可见
-
-## 学习收获
-
-通过本项目部署，深入理解了：
-- Aleo 程序的完整部署流程
-- 测试网环境的使用方法
-- 链上交互的实际体验
-- 隐私保护机制的验证方法
+3. **查看钱包地址**：
+   https://testnet.explorer.provable.com/address/aleo15xrzy5rp2rz8xadnv8htm267k7tt3q3gmkh7nqqfva5kt02v6yyqpdnu8e
 
 ---
 
-**提交人**：luke不吃面 (Lukeknow0)  
-**日期**：2026年5月21日  
+**提交人**：luke不吃面 (Lukeknow0)
+**日期**：2026年5月21日
 **Aleo 钱包地址**：aleo15xrzy5rp2rz8xadnv8htm267k7tt3q3gmkh7nqqfva5kt02v6yyqpdnu8e
