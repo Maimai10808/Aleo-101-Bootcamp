@@ -2,6 +2,97 @@
 title: Finalization Model
 ---
 
-# Finalization Model
+# Finalization 模型
 
-TODO: Add Leo finalization model guide content.
+## 背景
+
+Leo 程序运行在两个不同的上下文中：
+
+- **证明上下文** — 私有的链下执行，用于生成 ZK 证明。常规的 `fn` 声明在这里运行。输入可以是私有的，并且计算过程在链上不可见。
+- **Finalization 上下文** — 公开的链上执行，用于修改状态。`final { }` 代码块在这里运行。所有输入和操作都是公开可见的。
+
+## 管理公共状态
+
+链上数据以三种数据结构之一公开存储：mappings、storage variables 和 storage vectors。任何读取或更新这些结构状态的逻辑都必须包含在 `final { }` 代码块中，或者位于 `final fn` 内：
+
+```leo
+program first_public_state.aleo {
+    mapping accumulator: u8 => u64;
+    storage count: u8;
+    storage queue: [u8];
+
+    //=============================================================
+    //               MAPPING MODIFICATION
+    //=============================================================
+    fn increment_accumulator() -> Final {
+        return final {
+            let current_count: u64 = accumulator.get_or_use(0u8, 0u64); // 获取当前值，默认为 0
+            let new_count: u64 = current_count + 1u64;
+            accumulator.set(0u8, new_count);
+        };
+    }
+
+    //=============================================================
+    //            STORAGE VARIABLE MODIFICATION
+    //=============================================================
+    fn increment_count() -> Final {
+        return final {
+            let current_count: u8 = count.unwrap_or(0u8); // 获取当前值，默认为 0
+            count = current_count + 1u8;
+        };
+    }
+
+    //=============================================================
+    //            STORAGE VECTOR MODIFICATION
+    //=============================================================
+    fn add_to_queue(val: u8) -> Final {
+        return final {
+            queue.push(val); // 推入队列末尾
+        };
+    }
+}
+```
+
+包含链上逻辑的入口函数会返回 `Final`，并在内联的 `final { }` 代码块中嵌入 finalization 代码。还需遵循一些附加规则：
+
+- 入口函数可以在元组中返回其他数据类型，包括 Records，并同时返回一个 `Final`。
+- 只能返回一个 `Final`。
+- 如果返回多个类型，`Final` 必须是元组中的最后一个类型。
+
+## 外部调用
+
+Leo 允许开发者调用已导入程序中的入口函数。对返回 `Final` 的外部入口函数的调用会生成一个 `Final` 值，该值可以在 `final { }` 代码块中使用 `.run()` 方法进行组合：
+
+```leo
+import first_public_storage.aleo;
+
+program second_public_storage.aleo {
+    mapping hashes: u8 => scalar;
+
+    fn two_mappings(value: u8) -> Final {
+        let increment_final: Final = first_public_storage.aleo::increment();
+        return final {
+            increment_final.run();
+            let hash: scalar = BHP256::hash_to_scalar(value);
+            hashes.set(value, hash);
+        };
+    }
+}
+```
+
+你可以使用以下语法访问外部 `Final` 的输入：
+
+```leo
+let f = imported_program.aleo::some_function();
+let value = f.0;  // 或 f.1、f.2、f.3 等，具体取决于输入索引
+```
+
+## 同时管理公共状态和私有状态
+
+Records 是私有状态，可以在证明上下文中创建或消耗，也就是入口 `fn` 的函数体中，但不能在 `final { }` 代码块或 `final fn` 中创建或消耗。Finalization 上下文完全在链上运行，并且只能访问公共链上状态。
+
+|              | **公共状态**         | **私有状态**          |
+| ------------ | -------------------- | --------------------- |
+| **运行位置** | `final { }` 代码块   | 入口 `fn` 函数体      |
+| **数据存储** | `mapping`、`storage` | `record`              |
+| **可见性**   | 所有人               | 拥有 `viewkey` 时可见 |
